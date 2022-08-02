@@ -4,33 +4,59 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract NftMarket is ERC721URIStorage {
-  using Counters for Counters.Counter;
+    using Counters for Counters.Counter;
 
-  Counters.Counter private _listedItems;
-  Counters.Counter private _tokenIds;
+    Counters.Counter private _listedItems;
+    Counters.Counter private _tokenIds;
 
-  mapping(string => bool) private _usedTokenURIs;
+    mapping(string => bool) private _usedTokenURIs;
+    mapping(uint256 => NftItem) private _idToNftItem;
 
+    struct NftItem {
+        uint256 tokenId;
+        uint256 price;
+        address creator;
+        bool isListed;
+    }
 
-  constructor() ERC721("CreaturesNFT", "CNFT") {}
+    event NftItemCreated(
+        uint256 tokenId,
+        uint256 price,
+        address creator,
+        bool isListed
+    );
 
-  function mintToken(string memory tokenURI) public payable returns (uint) {
-    require(!tokenURIExists(tokenURI), "Token URI already exists");
+    constructor() ERC721("CreaturesNFT", "CNFT") {}
 
-    _tokenIds.increment();
-    _listedItems.increment();
+    function mintToken(string memory tokenURI, uint256 price)
+        public
+        payable
+        returns (uint256)
+    {
+        require(!tokenURIExists(tokenURI), "Token URI already exists");
 
-    uint newTokenId = _tokenIds.current();
+        _tokenIds.increment();
+        _listedItems.increment();
 
-    _safeMint(msg.sender, newTokenId);
-    _setTokenURI(newTokenId, tokenURI);
-    _usedTokenURIs[tokenURI] = true;
+        uint256 newTokenId = _tokenIds.current();
 
-    return newTokenId;
-  }
+        _safeMint(msg.sender, newTokenId);
+        _setTokenURI(newTokenId, tokenURI);
+        _createNftItem(newTokenId, price);
+        _usedTokenURIs[tokenURI] = true;
 
-  function tokenURIExists(string memory tokenURI) public view returns (bool) {
-    return _usedTokenURIs[tokenURI] == true;
-  }
+        return newTokenId;
+    }
 
+    function _createNftItem(uint256 tokenId, uint256 price) private {
+        require(price > 0, "Price must be at least 1 wei");
+
+        _idToNftItem[tokenId] = NftItem(tokenId, price, msg.sender, true);
+
+        emit NftItemCreated(tokenId, price, msg.sender, true);
+    }
+
+    function tokenURIExists(string memory tokenURI) public view returns (bool) {
+        return _usedTokenURIs[tokenURI] == true;
+    }
 }
