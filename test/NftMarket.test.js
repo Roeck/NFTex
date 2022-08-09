@@ -136,4 +136,4 @@ contract("NftMarket", accounts => {
             assert.equal(ownedNfts.length, 2, "Invalid length of tokens");
         })
     })
-})s
+})
